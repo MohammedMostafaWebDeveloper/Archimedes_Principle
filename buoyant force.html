@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Archimedes Principle</title>
+    <style>
+        *{
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: Arial, Helvetica, sans-serif;
+            color: white;
+        }
+        canvas{
+            position: absolute;
+        }
+        #controls{
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            padding: 20px;
+            border-radius: 10px;
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+    </style>
+</head>
+<body>
+    <canvas></canvas>
+    <div id="controls">
+        <label>Density</label>
+        <input type="range" min="1" max="200" id="density">
+    </div>
+    <script>
+        var canvas = document.querySelector("canvas")
+        canvas.height = innerHeight
+        canvas.width = innerWidth
+        var c = canvas.getContext("2d")
+
+        var density = document.getElementById("density")
+
+        var base_water_area = canvas.width * (canvas.height / 3)
+        var water_area = canvas.width * (canvas.height / 3)
+
+        var dragging = false
+
+        var g = 0.5
+
+        function getCutOffArea(radius, cutHeight) {
+            if (cutHeight <= 0) return 0;
+            if (cutHeight >= radius * 2) return Math.PI * radius * radius;
+
+            return (
+                radius * radius * Math.acos((radius - cutHeight) / radius) -
+                (radius - cutHeight) *
+                Math.sqrt(2 * radius * cutHeight - cutHeight * cutHeight)
+            );
+        }
+
+
+        class Ball {
+            constructor(x, y) {
+                this.pos = {x: x, y: y}
+                this.vel = {x: 0, y: 0}
+                this.radius = 30
+            }
+            draw() {
+                c.beginPath()
+                c.arc(this.pos.x, this.pos.y, this.radius, 0, Math.PI * 2, false)
+                c.fillStyle = "rgb(20, 200, 70)"
+                c.fill()
+            }
+            collide() {
+                if (this.pos.x + this.radius >= canvas.width) {
+                    this.pos.x = canvas.width - this.radius
+                    this.vel.x = -this.vel.x
+                }
+                if (this.pos.x - this.radius <= 0) {
+                    this.pos.x = this.radius
+                    this.vel.x = -this.vel.x
+                }
+                if (this.pos.y + this.radius >= canvas.height) {
+                    this.pos.y = canvas.height - this.radius
+                    this.vel.y = -this.vel.y
+                }
+                if (this.pos.y - this.radius <= 0) {
+                    this.pos.y = this.radius
+                    this.vel.y = -this.vel.y
+                }
+            }
+            update() {
+                if (dragging == false) {
+                    this.vel.y += g 
+                    var waterY = canvas.height - water_area / canvas.width
+                    var cutHeight = this.pos.y + this.radius - waterY
+                    if (cutHeight > 0) {
+                        console.log("Dsg")
+                        var displaced_area = getCutOffArea(this.radius, cutHeight)
+                        this.vel.y -= displaced_area / (Math.PI * this.radius * this.radius) * g / (density.value / 100)
+                        this.vel.y *= 0.7
+                    }
+                    this.pos.x += this.vel.x
+                    this.pos.y += this.vel.y
+                }
+                this.collide()
+                this.draw()
+            }
+        }
+        
+        var ball = new Ball(canvas.width / 2, 100)
+
+        var prepos = {x: 0, y: 0}
+
+        window.onmousedown = function (e) {
+            var dist = Math.hypot(e.clientX - ball.pos.x, e.clientY - ball.pos.y)
+            if (dist < ball.radius + 20) {
+                dragging = true
+                prepos = {x: e.clientX, y: e.clientY}
+                ball.vel = {x: 0, y: 0}
+            }
+            
+
+        }
+
+        window.onmouseup = function () {
+            dragging = false
+        }
+
+        window.onmousemove = function (e) {
+            if (dragging == true) {
+                ball.pos.x += e.clientX - prepos.x
+                ball.pos.y += e.clientY - prepos.y
+                prepos = {x: e.clientX, y: e.clientY}
+            }
+        }
+
+        function animate() {
+            c.clearRect(0, 0, canvas.width, canvas.height)
+            requestAnimationFrame(animate)
+            ball.update()
+            c.fillStyle = "rgba(10, 50, 200, 0.5)"
+            c.fillRect(0, canvas.height - water_area / canvas.width, canvas.width, water_area / canvas.width)
+            
+        }
+        animate()
+    </script>
+</body>
+</html>
