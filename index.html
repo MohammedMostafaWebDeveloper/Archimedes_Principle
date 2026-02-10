@@ -111,28 +111,36 @@
 
         var prepos = {x: 0, y: 0}
 
-        window.onmousedown = function (e) {
-            var dist = Math.hypot(e.clientX - ball.pos.x, e.clientY - ball.pos.y)
+        canvas.addEventListener("pointerdown", (e) => {
+            const rect = canvas.getBoundingClientRect()
+            const x = e.clientX - rect.left
+            const y = e.clientY - rect.top
+        
+            const dist = Math.hypot(x - ball.pos.x, y - ball.pos.y)
             if (dist < ball.radius + 20) {
                 dragging = true
-                prepos = {x: e.clientX, y: e.clientY}
-                ball.vel = {x: 0, y: 0}
+                prepos = { x, y }
+                ball.vel = { x: 0, y: 0 }
+                canvas.setPointerCapture(e.pointerId)
             }
-            
-
-        }
-
-        window.onmouseup = function () {
+        })
+        
+        canvas.addEventListener("pointermove", (e) => {
+            if (!dragging) return
+        
+            const rect = canvas.getBoundingClientRect()
+            const x = e.clientX - rect.left
+            const y = e.clientY - rect.top
+        
+            ball.pos.x += x - prepos.x
+            ball.pos.y += y - prepos.y
+            prepos = { x, y }
+        })
+        
+        canvas.addEventListener("pointerup", () => {
             dragging = false
-        }
+        })
 
-        window.onmousemove = function (e) {
-            if (dragging == true) {
-                ball.pos.x += e.clientX - prepos.x
-                ball.pos.y += e.clientY - prepos.y
-                prepos = {x: e.clientX, y: e.clientY}
-            }
-        }
 
         function animate() {
             c.clearRect(0, 0, canvas.width, canvas.height)
@@ -146,3 +154,4 @@
     </script>
 </body>
 </html>
+
